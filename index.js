@@ -36,6 +36,17 @@ client.on('ready', () => {
     console.log('WhatsApp client is ready!');
 });
 
+client.on('disconnected', (reason) => {
+    isClientReady = false;
+    console.log('WhatsApp client was disconnected:', reason);
+    console.log('Please scan the QR code again...');
+});
+
+client.on('auth_failure', (msg) => {
+    console.log('WhatsApp authentication failed:', msg);
+    isClientReady = false;
+});
+
 // API endpoint to send WhatsApp message
 app.post('/send-message', async (req, res) => {
     if (!isClientReady) {
@@ -59,6 +70,16 @@ app.post('/send-message', async (req, res) => {
         res.json({ success: true, message: 'Message sent!' });
     } catch (err) {
         console.error('Error sending message:', err);
+        
+        // Check if it's a session error
+        if (err.message.includes('getChat') || err.message.includes('Evaluation failed')) {
+            isClientReady = false;
+            return res.status(503).json({ 
+                error: 'WhatsApp session expired. Please re-authenticate by scanning the QR code again.',
+                details: err.message 
+            });
+        }
+        
         res.status(500).json({ error: err.message });
     }
 });
@@ -66,6 +87,14 @@ app.post('/send-message', async (req, res) => {
 // Add this route for GET /
 app.get('/', (req, res) => {
   res.send('WhatsApp Bot API is running!');
+});
+
+app.get('/status', (req, res) => {
+    res.json({
+        isClientReady,
+        hasQrCode: !!latestQr,
+        message: isClientReady ? 'WhatsApp client is ready' : 'WhatsApp client is not ready'
+    });
 });
 
 app.get('/qr', async (req, res) => {
