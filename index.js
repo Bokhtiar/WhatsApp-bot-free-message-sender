@@ -41,25 +41,24 @@ app.post('/send-message', async (req, res) => {
     if (!isClientReady) {
         return res.status(503).json({ error: 'WhatsApp client is not ready yet. Please try again later.' });
     }
-    const { number } = req.body;
+    const { number, fixedMessage } = req.body;
+
     if (!number) {
         return res.status(400).json({ error: 'number is required' });
     }
+    if (!fixedMessage) {
+        return res.status(400).json({ error: 'fixedMessage is required' });
+    }
     try {
         const chatId = number + '@c.us';
-        const fixedMessage =
-`*Bill Submitted!*\n
-Thank you for your payment.\n
-_Your bill has been received and is being processed._\n
-\n
-*Details:*\n
-- Date: 2024-06-07\n
-- Amount: $100\n
-\n
-If you have questions, reply to this message.`;
+        console.log('Sending message to:', chatId);
+        console.log('Message:', fixedMessage);
+        
         await client.sendMessage(chatId, fixedMessage);
+        console.log('Message sent successfully!');
         res.json({ success: true, message: 'Message sent!' });
     } catch (err) {
+        console.error('Error sending message:', err);
         res.status(500).json({ error: err.message });
     }
 });
