@@ -48,41 +48,66 @@ client.on('auth_failure', (msg) => {
 });
 
 // API endpoint to send WhatsApp message
-app.post('/send-message', async (req, res) => {
-    if (!isClientReady) {
-        return res.status(503).json({ error: 'WhatsApp client is not ready yet. Please try again later.' });
-    }
-    const { number, fixedMessage } = req.body;
+// app.post('/send-message', async (req, res) => {
+//     if (!isClientReady) {
+//         return res.status(503).json({ error: 'WhatsApp client is not ready yet. Please try again later.' });
+//     }
+//     const { number, fixedMessage } = req.body;
 
-    if (!number) {
-        return res.status(400).json({ error: 'number is required' });
-    }
-    if (!fixedMessage) {
-        return res.status(400).json({ error: 'fixedMessage is required' });
-    }
-    try {
-        const chatId = number + '@c.us';
-        console.log('Sending message to:', chatId);
-        console.log('Message:', fixedMessage);
+//     if (!number) {
+//         return res.status(400).json({ error: 'number is required' });
+//     }
+//     if (!fixedMessage) {
+//         return res.status(400).json({ error: 'fixedMessage is required' });
+//     }
+//     try {
+//         const chatId = number + '@c.us';
+//         console.log('Sending message to:', chatId);
+//         console.log('Message:', fixedMessage);
         
-        await client.sendMessage(chatId, fixedMessage);
-        console.log('Message sent successfully!');
-        res.json({ success: true, message: 'Message sent!' });
-    } catch (err) {
-        console.error('Error sending message:', err);
+//         await client.sendMessage(chatId, fixedMessage);
+//         console.log('Message sent successfully!');
+//         res.json({ success: true, message: 'Message sent!' });
+//     } catch (err) {
+//         console.error('Error sending message:', err);
         
-        // Check if it's a session error
-        if (err.message.includes('getChat') || err.message.includes('Evaluation failed')) {
-            isClientReady = false;
-            return res.status(503).json({ 
-                error: 'WhatsApp session expired. Please re-authenticate by scanning the QR code again.',
-                details: err.message 
-            });
-        }
+//         // Check if it's a session error
+//         if (err.message.includes('getChat') || err.message.includes('Evaluation failed')) {
+//             isClientReady = false;
+//             return res.status(503).json({ 
+//                 error: 'WhatsApp session expired. Please re-authenticate by scanning the QR code again.',
+//                 details: err.message 
+//             });
+//         }
         
-        res.status(500).json({ error: err.message });
-    }
+//         res.status(500).json({ error: err.message });
+//     }
+// });
+
+app.post("/send-message", async (req, res) => {
+  if (!isClientReady) {
+    return res.status(503).json({
+      error: "WhatsApp client is not ready yet. Please try again later.",
+    });
+  }
+
+  const { number, message } = req.body;
+
+  if (!number || !message) {
+    return res.status(400).json({ error: "number and message are required" });
+  }
+
+  try {
+    const chatId = number + "@c.us"; // WhatsApp চ্যাট আইডি ফরম্যাট
+
+    await client.sendMessage(chatId, message); // Laravel থেকে আসা মেসেজ পাঠানো হচ্ছে
+
+    res.json({ success: true, message: "Message sent!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 // Add this route for GET /
 app.get('/', (req, res) => {
